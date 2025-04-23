@@ -6,6 +6,6 @@ spec:
   selector:
     app: web-application
   ports:
-    - name: TCP
-      port: 80
+    - name: http
+      port: 4000
       targetPort: 4000

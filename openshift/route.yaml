@@ -7,6 +7,6 @@ spec:
     kind: Service
     name: web-application
   port:
-    targetPort: 80
+    targetPort: 4000
   tls:
     termination: edge
