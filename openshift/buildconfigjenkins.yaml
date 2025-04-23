@@ -1,0 +1,19 @@
+apiVersion: build.openshift.io/v1
+kind: BuildConfig
+metadata:
+  name: web-application
+  namespace: bharath
+spec:
+  source:
+    git:
+      ref: main
+      uri: https://github.com/Bharathbk2002/openshift-jenkins.git
+    type: Git
+  strategy:
+    type: JenkinsPipeline
+    jenkinsPipelineStrategy:
+      jenkinsfilePath: Jenkinsfile
+  triggers:
+    - type: GitHub
+      github:
+        secret: github-webhook-secret
