@@ -17,3 +17,13 @@ spec:
         image: web-application:latest
         ports:
         - containerPort: 4000
+  triggers:
+  - type: ConfigChange
+  - type: ImageChange
+    imageChangeParams:
+      automatic: true
+      containerNames:
+      - web-application-deployment
+      from:
+        kind: ImageStreamTag
+        name: web-application:latest
