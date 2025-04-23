@@ -1,0 +1,20 @@
+apiVersion: build.openshift.io/v1
+kind: BuildConfig
+metadata:
+  name: web-app-image
+spec:
+  source:
+    git:
+      uri: https://github.com/Bharathbk2002/openshift-jenkins.git
+    contextDir: .
+  strategy:
+    type: Docker
+    dockerStrategy:
+      dockerfilePath: Dockerfile
+      pullSecret:
+        name: dockerhub-secret1
+  output:
+    to:
+      kind: ImageStreamTag
+      name: web-application:latest
+  

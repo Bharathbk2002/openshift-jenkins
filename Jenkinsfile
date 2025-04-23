@@ -1,85 +1,88 @@
 pipeline {
     agent any
 
-    environment {
-        REPO_URL = 'https://github.com/Bharathbk2002/Podman_CreateImage_PushImage.git'
-        IMAGE_NAME = 'web-app'  
-        IMAGE_TAG = 'latest'  
-        REGISTRY_URL = 'docker.io'  
-        REGISTRY_CREDENTIALS = 'dockerhub-credentials'
-    }
-    
-
     stages {
-        stage('Checkout') {
-            steps {
-                git url: REPO_URL, branch: 'main'
-            }
-        }
-        
-        stage('Build Image and test image') {
-            parallel
-            {
-            stage('Build Image')
-            {
+        stage('Image-stream') {
             steps {
                 script {
                     sh """
-                        podman build --layers=true -t bharathbk02/${IMAGE_NAME}:${IMAGE_TAG} .
+                        echo "Creating ImageStream..."
+                        oc create imagestream web-application || echo "ImageStream already exists."
                     """
                 }
             }
         }
-        stage('Test') {
-            steps {
-                script {
-                    sh """
-                        podman run --rm bharathbk02/${IMAGE_NAME}:${IMAGE_TAG}
-                    """
-                }
-            }
-        }
-        }
-        }
         
-        stage('Push Image') {
+        stage('Build configuration') {
             steps {
                 script {
-                    
-                    withCredentials([usernamePassword(credentialsId: "${REGISTRY_CREDENTIALS}", usernameVariable: 'REGISTRY_USER', passwordVariable: 'REGISTRY_PASS')]) {
-                        sh """
-                            podman login -u $REGISTRY_USER -p $REGISTRY_PASS ${REGISTRY_URL}
-                            podman push bharathbk02/${IMAGE_NAME}:${IMAGE_TAG} 
-                        """
-                    }
-                }
-            }
-        }
-        stage('Deployment')
-        {
-            steps
-            {
-                script
-                {
                     sh """
-                        podman rm ${IMAGE_NAME}
-                        podman run -d -p 4002:4000 --name ${IMAGE_NAME} bharathbk02/${IMAGE_NAME}:${IMAGE_TAG}
-                        curl http://localhost:4002
+                        echo "Applying BuildConfig..."
+                        oc apply -f openshift/buildconfig.yaml
+                        echo "Starting build..."
+                        oc start-build web-app-image --wait
                     """
                 }
             }
         }
 
-        
-    
+        stage('Deployment') {
+            steps {
+                script {
+                    sh """
+                        echo "Applying DeploymentConfig..."
+                        oc apply -f openshift/deploymentconfig.yaml
+                    """
+                }
+            }
+        }
+
+        stage('Service') {
+            steps {
+                script {
+                    sh """
+                        echo "Applying Service..."
+                        oc apply -f openshift/service.yaml
+                    """
+                }
+            }
+        }
+
+        stage('Route') {
+            steps {
+                script {
+                    sh """
+                        echo "Applying Route..."
+                        oc apply -f openshift/route.yaml
+                    """
+                }
+            }
+        }
+
+        stage('Deploy Application') {
+            steps {
+                script {
+                    echo "Waiting for the application to deploy and become accessible..."
+
+                    def appRoute = sh(script: "oc get route web-application -o jsonpath='{.spec.host}'", returnStdout: true).trim()
+                    echo "Verifying application at: http://${appRoute}"
+
+                    sh "sleep 10"
+
+                    sh """
+                        curl --fail --retry 5 --retry-delay 5 http://${appRoute}
+                    """
+                }
+            }
+        }
+    }
 
     post {
         success {
-            echo 'Image built,tested,pushed and deployed locally and to cloud VM Sucessfully!'
+            echo 'Deployment successful! Application is live.'
         }
         failure {
-            echo 'Pipeline failed.'
+            echo 'Pipeline failed. Please check the logs for errors.'
         }
     }
-  }
 }

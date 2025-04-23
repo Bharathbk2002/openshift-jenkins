@@ -1,0 +1,29 @@
+apiVersion: apps.openshift.io/v1
+kind: DeploymentConfig
+metadata:
+  name: web-application
+  namespace: bharath
+spec:
+  replicas: 1
+  selector:
+    app: web-application
+  template:
+    metadata:
+      labels:
+        app: web-application
+    spec:
+      containers:
+      - name: web-application
+        image: web-application:latest
+        ports:
+        - containerPort: 4000
+  triggers:
+  - type: ConfigChange
+  - type: ImageChange
+    imageChangeParams:
+      automatic: true
+      containerNames:
+      - web-application
+      from:
+        kind: ImageStreamTag
+        name: web-application:latest
