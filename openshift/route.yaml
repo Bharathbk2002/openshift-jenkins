@@ -9,4 +9,4 @@ spec:
   port:
     targetPort: 4000
   tls:
-    termination: reencrypt
+    termination: edge
