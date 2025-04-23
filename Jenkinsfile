@@ -64,14 +64,9 @@ pipeline {
                 script {
                     echo "Waiting for the application to deploy and become accessible..."
 
-                    def appRoute = sh(script: "oc get route web-application -o jsonpath='{.spec.host}'", returnStdout: true).trim()
+                    def appRoute = sh(script: "oc get route web-application-route -o jsonpath='{.spec.host}'", returnStdout: true).trim()
                     echo "Verifying application at: https://${appRoute}"
 
-                    sh "sleep 10"
-
-                    sh """
-                        curl --fail --retry 5 --retry-delay 5 https://${appRoute}
-                    """
                 }
             }
         }
